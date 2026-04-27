@@ -24,10 +24,3 @@ app.include_router(records.router, prefix="/api/v1/records", tags=["records"])
 def health_check():
     return {"status": "ok"}
 
-@app.get("/debug-env")
-def debug_env():
-    from app.core.config import settings
-    return {
-        "url": settings.supabase_url[:30],
-        "anon_key_prefix": settings.supabase_anon_key[:20],
-    }
