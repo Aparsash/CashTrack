@@ -30,6 +30,7 @@ def health_check():
 
 @app.get("/debug-env")
 def debug_env():
+    from app.core.config import settings
     return {
         "url": settings.supabase_url[:30],
         "anon_key_prefix": settings.supabase_anon_key[:20],
