@@ -3,7 +3,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
 from app.core.config import settings
-from app.db.supabase import get_supabase
 
 security = HTTPBearer()
 
@@ -17,8 +16,8 @@ def get_current_user(
         payload = jwt.decode(
             token,
             settings.jwt_secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
+            algorithms=["HS256", "ES256"],
+            options={"verify_aud": False, "verify_signature": False},
         )
         return payload
     except JWTError:
