@@ -7,8 +7,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     jwt_secret: str
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
 settings = Settings()
