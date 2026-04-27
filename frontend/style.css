@@ -612,3 +612,18 @@ td.mixed-text {
         min-width: 900px;
     }
 }
+
+.login-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-card {
+  width: min(420px, calc(100% - 32px));
+  display: grid;
+  gap: 16px;
+  padding: 28px;
+  border-radius: var(--radius-xl);
+}
