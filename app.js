@@ -79,6 +79,9 @@ loginBtn.addEventListener("click", async () => {
 });
 
 showRegisterBtn.addEventListener("click", async () => {
+
+    console.log("REGISTER HANDLER START");
+
   const email = loginEmail.value.trim();
   const password = loginPassword.value.trim();
 
@@ -382,8 +385,3 @@ window.addEventListener("load", async () => {
   }
 });
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  });
-}
