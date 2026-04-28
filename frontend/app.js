@@ -79,6 +79,9 @@ loginBtn.addEventListener("click", async () => {
 });
 
 showRegisterBtn.addEventListener("click", async () => {
+
+    console.log("REGISTER HANDLER START");
+
   const email = loginEmail.value.trim();
   const password = loginPassword.value.trim();
 
