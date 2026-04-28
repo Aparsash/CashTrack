@@ -1,4 +1,4 @@
-import { login, logout, isLoggedIn } from "./api/auth.js";
+import { login, register, logout, isLoggedIn } from "./api/auth.js";
 import {
   getRecords,
   createRecord,
@@ -15,6 +15,7 @@ const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
 const loginStatus = document.getElementById("loginStatus");
 const logoutBtn = document.getElementById("logoutBtn");
+const showRegisterBtn = document.getElementById("showRegisterBtn");
 
 const form = document.getElementById("expenseForm");
 const recordIdInput = document.getElementById("recordId");
@@ -74,6 +75,24 @@ loginBtn.addEventListener("click", async () => {
     await refreshUI();
   } catch (e) {
     loginStatus.textContent = "Ungültige E-Mail oder Passwort.";
+  }
+});
+
+showRegisterBtn.addEventListener("click", async () => {
+  const email = loginEmail.value.trim();
+  const password = loginPassword.value.trim();
+
+  if (!email || !password) {
+    loginStatus.textContent = "Bitte E-Mail und Passwort für die Registrierung eingeben.";
+    return;
+  }
+
+  try {
+    loginStatus.textContent = "Registrierung läuft...";
+    await register(email, password);
+    loginStatus.textContent = "Registrierung erfolgreich. Du kannst dich jetzt anmelden.";
+  } catch (e) {
+    loginStatus.textContent = "Registrierung fehlgeschlagen: " + e.message;
   }
 });
 
