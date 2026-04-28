@@ -1,4 +1,4 @@
-import { login, register, logout, isLoggedIn } from "./api/auth.js";
+import { login, logout, isLoggedIn } from "./api/auth.js";
 import {
   getRecords,
   createRecord,
@@ -89,7 +89,18 @@ showRegisterBtn.addEventListener("click", async () => {
 
   try {
     loginStatus.textContent = "Registrierung läuft...";
-    await register(email, password);
+
+    const res = await fetch("https://cashtrack-eo68.onrender.com/api/v1/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Registrierung fehlgeschlagen.");
+    }
+
     loginStatus.textContent = "Registrierung erfolgreich. Du kannst dich jetzt anmelden.";
   } catch (e) {
     loginStatus.textContent = "Registrierung fehlgeschlagen: " + e.message;
