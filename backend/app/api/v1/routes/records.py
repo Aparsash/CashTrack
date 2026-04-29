@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.deps import get_current_user
 from app.db.supabase import get_supabase
+from app.db.supabase import get_supabase_admin
 from app.schemas.record import RecordCreate, RecordOut, RecordUpdate
 from app.services.record_service import RecordService
 
@@ -11,7 +12,7 @@ router = APIRouter()
 
 
 def get_service() -> RecordService:
-    return RecordService(get_supabase())
+    return RecordService(get_supabase_admin())
 
 
 @router.get("/", response_model=list[RecordOut])

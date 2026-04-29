@@ -46,7 +46,7 @@ class RecordService:
         }
         response = self.db.table("records").insert(payload).execute()
         return response.data[0]
-
+    
     def update(self, record_id: UUID, data: RecordUpdate, user_id: UUID) -> dict:
         payload = {k: v for k, v in data.model_dump().items() if v is not None}
         if "created_at" in payload and isinstance(payload["created_at"], datetime):
