@@ -204,6 +204,7 @@ async function renderTable() {
 
     const itemsTd = document.createElement("td");
     itemsTd.className = "mixed-text";
+    itemsTd.style.whiteSpace = "pre-wrap";
     itemsTd.textContent = item.items;
 
     const dateTd = document.createElement("td");
@@ -382,7 +383,6 @@ readPdfBtn.addEventListener("click", async () => {
     }
 
     // Artikel
-   
     const artikelMatches = [...fullText.matchAll(/^([A-ZÄÖÜ][A-ZÄÖÜ\s\.]{2,})\s+(\d+[.,]\d{2})/gm)];
     if (artikelMatches.length) {
       itemsInput.value = artikelMatches
