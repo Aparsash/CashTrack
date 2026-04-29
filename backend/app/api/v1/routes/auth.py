@@ -16,11 +16,15 @@ class RegisterRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 @router.post("/register")
 def register(data: RegisterRequest):
     db = get_supabase()
     try:
-        response = db.auth.sign_up({
+        db.auth.sign_up({
             "email": data.email,
             "password": data.password,
         })
@@ -42,10 +46,28 @@ def login(data: LoginRequest):
         })
         return {
             "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
             "token_type": "bearer",
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
+        )
+
+
+@router.post("/refresh")
+def refresh(data: RefreshRequest):
+    db = get_supabase()
+    try:
+        response = db.auth.refresh_session(data.refresh_token)
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+            "token_type": "bearer",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
         )
