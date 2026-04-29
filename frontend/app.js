@@ -366,9 +366,76 @@ readPdfBtn.addEventListener("click", async () => {
       const content = await page.getTextContent();
       fullText += content.items.map(x => x.str).join("\n") + "\n";
     }
-    setPdfStatus("PDF erfolgreich gelesen. Bitte Daten prüfen.");
+
+    // Betrag extrahieren (z.B. "42,50 €" oder "42.50 EUR")
+    const amountMatch = fullText.match(/(\d+[.,]\d{2})\s*(?:€|EUR)/i);
+    if (amountMatch) {
+      amountInput.value = amountMatch[1].replace(",", ".");
+    }
+
+    // Datum extrahieren (z.B. "15.03.2024" oder "2024-03-15")
+    const dateMatch = fullText.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+    if (dateMatch) {
+      dateInput.value = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+    }
+
+    // Typ auf Ausgabe setzen (Rechnung = meistens Ausgabe)
+    typeInput.value = "Ausgabe";
+
+    // Dateiname als Ort vorschlagen
+    placeInput.value = file.name.replace(".pdf", "");
+
+    setPdfStatus("PDF erfolgreich gelesen. Bitte Daten prüfen und ggf. anpassen.");
   } catch {
     setPdfStatus("PDF konnte nicht verarbeitet werden.");
+  }
+});
+
+// ── CSV Import ────────────────────────────────────────────────
+importCsvBtn.addEventListener("click", async () => {
+  const file = csvFileInput.files[0];
+  if (!file) { setCsvStatus("Bitte zuerst eine CSV-Datei auswählen."); return; }
+  setCsvStatus("CSV wird importiert ...");
+
+  try {
+    const text = await file.text();
+    const lines = text.split("\n").filter(l => l.trim());
+    const dataLines = lines.slice(1); // Header überspringen
+
+    let imported = 0;
+    let errors = 0;
+
+    for (const line of dataLines) {
+      // Komma-getrennte Werte, mit Anführungszeichen
+      const cols = line.match(/(".*?"|[^,]+)/g)?.map(v =>
+        v.replace(/^"|"$/g, "").replace(/""/g, '"').trim()
+      );
+      if (!cols || cols.length < 4) { errors++; continue; }
+
+      const [type, amount, place, items, datum] = cols;
+
+      // Datum: "15.12.2024" → "2024-12-15"
+      let created_at = new Date().toISOString();
+      if (datum) {
+        const dm = datum.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        if (dm) created_at = `${dm[3]}-${dm[2]}-${dm[1]}T12:00:00`;
+      }
+
+      const parsedAmount = parseFloat(String(amount).replace(",", "."));
+      if (!type || isNaN(parsedAmount)) { errors++; continue; }
+
+      try {
+        await createRecord({ type, amount: parsedAmount, place: place || "", items: items || "", created_at });
+        imported++;
+      } catch {
+        errors++;
+      }
+    }
+
+    setCsvStatus(`Import abgeschlossen: ${imported} Einträge importiert, ${errors} Fehler.`);
+    await refreshUI();
+  } catch {
+    setCsvStatus("CSV konnte nicht verarbeitet werden.");
   }
 });
 
