@@ -367,23 +367,35 @@ readPdfBtn.addEventListener("click", async () => {
       fullText += content.items.map(x => x.str).join("\n") + "\n";
     }
 
-    // Betrag extrahieren (z.B. "42,50 €" oder "42.50 EUR")
-    const amountMatch = fullText.match(/(\d+[.,]\d{2})\s*(?:€|EUR)/i);
-    if (amountMatch) {
-      amountInput.value = amountMatch[1].replace(",", ".");
+    // Betrag: SUMME zuerst suchen
+    const summeMatch = fullText.match(/SUMME\s+(?:EUR\s+)?(\d+[.,]\d{2})/i)
+      || fullText.match(/Betrag\s+EUR\s+(\d+[.,]\d{2})/i);
+    if (summeMatch) {
+      amountInput.value = summeMatch[1].replace(",", ".");
     }
 
-    // Datum extrahieren (z.B. "15.03.2024" oder "2024-03-15")
-    const dateMatch = fullText.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+    // Datum
+    const dateMatch = fullText.match(/Datum[:\s]+(\d{2})\.(\d{2})\.(\d{4})/i)
+      || fullText.match(/(\d{2})\.(\d{2})\.(\d{4})/);
     if (dateMatch) {
       dateInput.value = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
     }
 
-    // Typ auf Ausgabe setzen (Rechnung = meistens Ausgabe)
-    typeInput.value = "Ausgabe";
+    // Artikel
+    const artikelMatches = [...fullText.matchAll(/^([A-ZÄÖÜ][A-ZÄÖÜ\s\.]{2,})\s+\d+[.,]\d{2}/gm)];
+    if (artikelMatches.length) {
+      itemsInput.value = artikelMatches
+        .map(m => m[1].trim())
+        .filter(s => !["SUMME", "STEUER", "BRUTTO", "NETTO"].includes(s))
+        .join(", ");
+    }
 
-    // Dateiname als Ort vorschlagen
-    placeInput.value = file.name.replace(".pdf", "");
+    // Ort: erste nicht-leere Zeile
+    const firstLine = fullText.split("\n").map(l => l.trim()).find(l => l.length > 2);
+    placeInput.value = firstLine || file.name.replace(".pdf", "");
+
+    // Typ
+    typeInput.value = "Ausgabe";
 
     setPdfStatus("PDF erfolgreich gelesen. Bitte Daten prüfen und ggf. anpassen.");
   } catch {
@@ -399,25 +411,40 @@ importCsvBtn.addEventListener("click", async () => {
 
   try {
     const text = await file.text();
-    const lines = text.split("\n").filter(l => l.trim());
-    const dataLines = lines.slice(1); // Header überspringen
 
-    let imported = 0;
-    let errors = 0;
+    // Parser der mehrzeilige Felder versteht
+    function parseCSV(str) {
+      const rows = [];
+      let col = 0, row = [], inQuotes = false, val = "";
+      for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        if (inQuotes) {
+          if (ch === '"' && str[i+1] === '"') { val += '"'; i++; }
+          else if (ch === '"') { inQuotes = false; }
+          else { val += ch; }
+        } else {
+          if (ch === '"') { inQuotes = true; }
+          else if (ch === ',') { row.push(val); val = ""; col++; }
+          else if (ch === '\n') { row.push(val); rows.push(row); row = []; val = ""; col = 0; }
+          else if (ch === '\r') { /* skip */ }
+          else { val += ch; }
+        }
+      }
+      if (val || row.length) { row.push(val); rows.push(row); }
+      return rows;
+    }
 
-    for (const line of dataLines) {
-      // Komma-getrennte Werte, mit Anführungszeichen
-      const cols = line.match(/(".*?"|[^,]+)/g)?.map(v =>
-        v.replace(/^"|"$/g, "").replace(/""/g, '"').trim()
-      );
-      if (!cols || cols.length < 4) { errors++; continue; }
+    const rows = parseCSV(text);
+    const dataRows = rows.slice(1).filter(r => r.length >= 4 && r[0].trim());
 
+    let imported = 0, errors = 0;
+
+    for (const cols of dataRows) {
       const [type, amount, place, items, datum] = cols;
 
-      // Datum: "15.12.2024" → "2024-12-15"
       let created_at = new Date().toISOString();
       if (datum) {
-        const dm = datum.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        const dm = datum.trim().match(/(\d{2})\.(\d{2})\.(\d{4})/);
         if (dm) created_at = `${dm[3]}-${dm[2]}-${dm[1]}T12:00:00`;
       }
 
@@ -425,7 +452,13 @@ importCsvBtn.addEventListener("click", async () => {
       if (!type || isNaN(parsedAmount)) { errors++; continue; }
 
       try {
-        await createRecord({ type, amount: parsedAmount, place: place || "", items: items || "", created_at });
+        await createRecord({
+          type: type.trim(),
+          amount: parsedAmount,
+          place: (place || "").trim(),
+          items: (items || "").trim(),
+          created_at,
+        });
         imported++;
       } catch {
         errors++;
@@ -434,10 +467,11 @@ importCsvBtn.addEventListener("click", async () => {
 
     setCsvStatus(`Import abgeschlossen: ${imported} Einträge importiert, ${errors} Fehler.`);
     await refreshUI();
-  } catch {
-    setCsvStatus("CSV konnte nicht verarbeitet werden.");
+  } catch (e) {
+    setCsvStatus("CSV konnte nicht verarbeitet werden: " + e.message);
   }
 });
+
 
 // ── Init ──────────────────────────────────────────────────────
 window.addEventListener("load", async () => {
