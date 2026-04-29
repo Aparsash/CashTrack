@@ -382,12 +382,13 @@ readPdfBtn.addEventListener("click", async () => {
     }
 
     // Artikel
-    const artikelMatches = [...fullText.matchAll(/^([A-ZÄÖÜ][A-ZÄÖÜ\s\.]{2,})\s+\d+[.,]\d{2}/gm)];
+   
+    const artikelMatches = [...fullText.matchAll(/^([A-ZÄÖÜ][A-ZÄÖÜ\s\.]{2,})\s+(\d+[.,]\d{2})/gm)];
     if (artikelMatches.length) {
       itemsInput.value = artikelMatches
-        .map(m => m[1].trim())
-        .filter(s => !["SUMME", "STEUER", "BRUTTO", "NETTO"].includes(s))
-        .join(", ");
+        .filter(m => !["SUMME", "STEUER", "BRUTTO", "NETTO"].includes(m[1].trim()))
+        .map(m => `${m[1].trim()}, ${m[2]}`)
+        .join("\n");
     }
 
     // Ort: erste nicht-leere Zeile

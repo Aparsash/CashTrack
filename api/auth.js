@@ -7,6 +7,7 @@ export async function login(email, password) {
   });
 
   localStorage.setItem("access_token", data.access_token);
+  localStorage.setItem("refresh_token", data.refresh_token);
   return data;
 }
 
@@ -19,6 +20,7 @@ export async function register(email, password) {
 
 export function logout() {
   localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
 }
 
 export function isLoggedIn() {
